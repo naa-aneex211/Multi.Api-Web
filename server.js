@@ -7,6 +7,10 @@ app.use(express.json());
 const SECRET_KEY = process.env.SECRET_KEY 
 const rooms = new Map();
 
+app.get('/ping', (req, res) => {
+    res.status(200).send("Pong! Meyy Hub is Awake (｡◕‿◕｡)");
+});
+
 app.use((req, res, next) => {
     const group = req.headers['x-group'];
     const timestamp = parseInt(req.headers['x-timestamp']);
