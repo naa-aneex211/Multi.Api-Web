@@ -1,20 +1,30 @@
 require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
+const compression = require('compression');
 const app = express();
+
+app.use(compression());
 app.use(express.json());
+const cors = require('cors');
+app.use(cors());
 
 const SECRET_KEY = process.env.SECRET_KEY 
 const rooms = new Map();
 
-app.get('/ping', (req, res) => {
-    res.status(200).send("Pong! Meyy Hub is Awake (｡◕‿◕｡)");
+app.get('/', (req, res) => {
+    res.redirect('/dashboard');
 });
-app.get('/dashboard', (req, res) => {
-    if (req.query.pass !== SECRET_KEY) {
-        return res.status(401).send("Hông có pass hông cho xem đâuu (๑•́ ₃ •̀๑)");
-    }
 
+app.get('/ping', (req, res) => {
+    res.status(200).send("Pong! Meyy Hub is Awake ");
+});
+
+app.get('/dashboard', (req, res) => {
+    res.sendFile(__dirname + '/dashboard.html');
+});
+
+app.get('/dashboard-data', (req, res) => {
     let allData = {};
     const currentTime = Math.floor(Date.now() / 1000);
 
@@ -26,7 +36,7 @@ app.get('/dashboard', (req, res) => {
                 let isOnline = (currentTime - accData.LastTime <= 300);
                 allData[service][group][accName] = {
                     ...accData,
-                    Status: isOnline ? "Online 🟢" : "Offline 🔴 (Sắp bị clear)"
+                    Status: isOnline ? "Online" : "Offline"
                 };
             }
         }
@@ -102,5 +112,5 @@ function buildFinalOutput(service, group) {
 }
 
 app.listen(3000, () => {
-    console.log('Meyy Hub API is running on port 3000! (｡◕‿◕｡)');
+    console.log('Meyy Hub API is running on port');
 });
