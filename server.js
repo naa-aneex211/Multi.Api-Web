@@ -71,23 +71,28 @@ app.get('/see', (req, res) => {
 
 app.use((req, res, next) => {
     const group = req.headers['x-group'];
-    const timestamp = parseInt(req.headers['x-timestamp']);
     const signature = req.headers['x-signature'];
 
-    if (!group || !timestamp || !signature) return res.status(401).send("Missing Headers");
-    
-    const now = Math.floor(Date.now() / 1000);
-    if (Math.abs(now - timestamp) > 60) return res.status(401).send("Expired Request");
+    if (!group || !signature) return res.status(401).send("Missing Headers");
 
-    let dataToHash = timestamp.toString() + group;
-    if (req.method === 'POST' && req.body) {
-        dataToHash += (req.body.Name || ""); 
+    const rawTimestamp = req.headers['x-timestamp'];
+    const bodyName = (req.method === 'POST' && req.body && req.body.Name) ? req.body.Name : "";
+
+    let isValid = false;
+
+    if (rawTimestamp) {
+        const hashWithTime = crypto.createHash('sha256').update(rawTimestamp.toString() + group + bodyName + SECRET_KEY).digest('hex');
+        if (signature === hashWithTime) isValid = true;
     }
 
-    const expectedSig = crypto.createHash('sha256').update(dataToHash + SECRET_KEY).digest('hex');
-    if (signature !== expectedSig) return res.status(401).send("Invalid Signature"); 
+    if (!isValid) {
+        const hashWithoutTime = crypto.createHash('sha256').update(group + bodyName + SECRET_KEY).digest('hex');
+        if (signature === hashWithoutTime) isValid = true;
+    }
 
-    req.group = group; 
+    if (!isValid) return res.status(401).send("Invalid Signature");
+
+    req.group = group;
     next();
 });
 // Thêm Map lưu trữ trạng thái ghép cặp riêng cho v4
