@@ -46,6 +46,29 @@ app.get('/dashboard-data', (req, res) => {
     res.send(JSON.stringify(allData, null, 4));
 });
 
+
+app.get('/see', (req, res) => {
+    let rawRoomsData = {};
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    for (let [service, serviceRooms] of rooms.entries()) {
+        rawRoomsData[service] = {};
+        for (let [group, groupAccounts] of serviceRooms.entries()) {
+            rawRoomsData[service][group] = {};
+            for (let [accName, accData] of groupAccounts.entries()) {
+                rawRoomsData[service][group][accName] = {
+                    ...accData,
+                    Online: (currentTime - (accData.LastTime || 0) <= 300),
+                    AgeSeconds: currentTime - (accData.LastTime || 0)
+                };
+            }
+        }
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(rawRoomsData, null, 4));
+});
+
 app.use((req, res, next) => {
     const group = req.headers['x-group'];
     const timestamp = parseInt(req.headers['x-timestamp']);
